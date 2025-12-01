@@ -3,7 +3,28 @@ Screens:
     Properties:
       LoadingSpinnerColor: =RGBA(56, 96, 178, 1)
       OnVisible: |-
-        =ClearCollect(AllItemMaster,Blank());
+        =Set(varHideBT, Blank()); // ย้ายมาไว้บรรทัดแรกๆ
+
+        // ใช้ AllItemMaster ที่มีอยู่แล้ว มาคำนวณได้เลย
+        ClearCollect(count2Pre, Filter(AllItemMaster, Value(Diff) <> 0));
+        ClearCollect(count2Step1, GroupBy(count2Pre, productNumber, ValueStep1));
+
+        // คำนวณยอดรวม
+        ClearCollect(count2SumCount, 
+            AddColumns(count2Step1, 
+                SumCount1, Sum(ValueStep1, countN), 
+                SumPhysicalInventory, Sum(ValueStep1, physicalInventory)
+            )
+        );
+
+        // สร้าง Collection ปลายทางสำหรับ Gallery
+        ClearCollect(Count2Final, Ungroup(count2SumCount, ValueStep1));
+
+        // ตั้งค่าตัวแปรซ่อนปุ่ม
+        Set(varHideBT, CountRows(Filter(Gallery1_1.AllItems, IsBlank(counted2))));
+
+        /*
+        ClearCollect(AllItemMaster,Blank());
         Concurrent(
                   ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
                   ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
@@ -22,6 +43,7 @@ Screens:
 
         Set(varHideBT,Blank());
         Set(varHideBT,CountRows(Filter(Gallery1_1.AllItems,IsBlank(counted2))));
+        */
     Children:
       - Component1_3:
           Control: CanvasComponent
@@ -171,6 +193,7 @@ Screens:
             OnChange: |-
               =//Reset(Toggle1)
 
+              /*
               Concurrent(
                         ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
                         ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
@@ -181,6 +204,8 @@ Screens:
               );
               ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
               );
+
+              */
             PressedColor: =RGBA(255, 255, 255, 1)
             PressedFill: =RGBA(0, 18, 107, 1)
             SearchFields: =["field_3"]
@@ -251,7 +276,8 @@ Screens:
 
                     //If(Toggle1_1.Value = true,LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS_1.Selected.Value,countN),ThisItem.countN)
 
-                    LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2)
+                    //LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2)
+                    ThisItem.counted2
                   DisplayMode: =DisplayMode.Disabled
                   Fill: |+
                     =RGBA(255, 255, 255, 1)
@@ -288,7 +314,8 @@ Screens:
                     */
                     //If(Toggle1_1.Value = true,LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS_1.Selected.Value,countN),ThisItem.countN)
 
-                    LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2)
+                    //LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2)
+                    ThisItem.counted2
                   Width: =143
                   X: =470
                   Y: =7
@@ -406,7 +433,35 @@ Screens:
                   HoverBorderColor: =ColorFade(Self.BorderColor, 20%)
                   HoverColor: =RGBA(255, 255, 255, 1)
                   HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
-                  OnSelect: "=If(ThisItem.field_6 = \"MODULA\",\r\n    \r\nPatch(\r\n            SonItemMaster,\r\n            LookUp(SonItemMaster, ID = ThisItem.ID),\r\n            { counted2: Value(Counting_1.Text) + LookUp(SonItemMaster,productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2) }\r\n        );\r\n,\r\n\r\nPatch(\r\n            SonItemMaster,\r\n            LookUp(SonItemMaster, ID = ThisItem.ID),\r\n            { counted2: Value(Counting_1.Text) }\r\n        );\r\n\r\n);\r\nReset(Counting_1);\r\n"
+                  OnSelect: |-
+                    =If(!IsBlank(Counting_1.Text),
+                        With(
+                            {
+                                _qtyInput: Value(Counting_1.Text),
+                                _currentItem: LookUp(SonItemMaster, ID = ThisItem.ID) // หาตัวจริงใน DB
+                            },
+                            With(
+                                {
+                                    // ถ้าเป็น Modula ให้บวกเพิ่ม / ถ้าไม่ใช่ ให้แทนค่าเลย
+                                    _finalCount: If(ThisItem.field_6 = "MODULA", 
+                                                    _currentItem.counted2 + _qtyInput, 
+                                                    _qtyInput)
+                                },
+
+                                // 1. Update Database จริง (SharePoint)
+                                Patch(SonItemMaster, _currentItem, { counted2: _finalCount });
+
+                                // 2. Update Collection ที่แสดงผล (Count2Final)
+                                // เพื่อให้ตัวเลขใน Gallery เปลี่ยนทันที
+                                Patch(Count2Final, ThisItem, { counted2: _finalCount })
+                            )
+                        );
+
+                        // เช็คเงื่อนไขซ่อนปุ่มอีกรอบ (Optional: ถ้าจำเป็นต้อง Real-time)
+                        // Set(varHideBT, CountRows(Filter(Count2Final, IsBlank(counted2))));
+
+                        Reset(Counting_1);
+                    )
                   PressedBorderColor: =Self.Fill
                   PressedColor: =Self.Fill
                   PressedFill: =Self.Color
@@ -477,16 +532,28 @@ Screens:
                   HoverBorderColor: =ColorFade(Self.BorderColor, 20%)
                   HoverColor: =RGBA(255, 255, 255, 1)
                   HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
-                  OnSelect: |+
-                    =Patch(
-                                SonItemMaster,
-                                LookUp(SonItemMaster, ID = ThisItem.ID),
-                                { counted2: Value(Counting_1.Text)*-1 + LookUp(SonItemMaster,productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2) }
-                            );
+                  OnSelect: |-
+                    =If(!IsBlank(Counting_1.Text),
+                        With(
+                            {
+                                _qtyToRemove: Value(Counting_1.Text),
+                                _currentItem: LookUp(SonItemMaster, ID = ThisItem.ID)
+                            },
+                            With(
+                                {
+                                    // เอาค่าเดิม ลบด้วย ค่าที่กรอก
+                                    _finalCount: _currentItem.counted2 - _qtyToRemove
+                                },
 
-                    Reset(Counting_1);
+                                // 1. Update Database จริง
+                                Patch(SonItemMaster, _currentItem, { counted2: _finalCount });
 
-
+                                // 2. Update Collection ที่แสดงผล
+                                Patch(Count2Final, ThisItem, { counted2: _finalCount })
+                            )
+                        );
+                        Reset(Counting_1);
+                    )
                   PaddingBottom: =3
                   PaddingLeft: =0
                   PaddingRight: =0
