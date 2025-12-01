@@ -2,8 +2,29 @@ Screens:
   Count3Screen:
     Properties:
       LoadingSpinnerColor: =RGBA(56, 96, 178, 1)
-      OnVisible: |+
-        =UpdateContext({varScannedItem:Blank()});
+      OnVisible: |-
+        =UpdateContext({varScannedItem: Blank()});
+
+        // ไม่ต้องโหลด AllItemMaster ใหม่ ใช้ของเดิมที่มีจาก OnStart ได้เลย
+        ClearCollect(count2Pre, Blank());
+        ClearCollect(count2Pre, Filter(AllItemMaster, Value(Diff) <> 0));
+
+        // จัดกลุ่มและคำนวณ
+        ClearCollect(count2Step1, GroupBy(count2Pre, productNumber, ValueStep1));
+        ClearCollect(count2SumCount, 
+            AddColumns(count2Step1, 
+                SumCount1, Sum(ValueStep1, If(IsBlank(counted2), countN, counted2)), 
+                SumPhysicalInventory, Sum(ValueStep1, physicalInventory)
+            )
+        );
+
+        // สร้าง Collection ปลายทางสำหรับ Gallery
+        ClearCollect(Count2Final, Ungroup(count2SumCount, ValueStep1));
+
+        ClearCollect(LocationSelect, Distinct(AllItemMaster, Location));
+
+        /*
+        UpdateContext({varScannedItem:Blank()});
         ClearCollect(AllItemMaster,Blank());
         Concurrent(
                   ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
@@ -21,6 +42,7 @@ Screens:
         ClearCollect(count2SumCount,AddColumns(count2Step1,SumCount1,Sum(ValueStep1,If(IsBlank(counted2),countN,counted2)),SumPhysicalInventory,Sum(ValueStep1,physicalInventory)));
         ClearCollect(Count2Final, Ungroup( count2SumCount, ValueStep1));
 
+        */
     Children:
       - Component1_4:
           Control: CanvasComponent
@@ -127,7 +149,7 @@ Screens:
             Items: =Filter(AllItemMaster,Value(Diff) <> 0)
             OnChange: |-
               =//Reset(Toggle1)
-
+              /*
               Concurrent(
                         ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
                         ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
@@ -138,6 +160,8 @@ Screens:
               );
               ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
               );
+
+              */
             PressedColor: =RGBA(255, 255, 255, 1)
             PressedFill: =RGBA(0, 18, 107, 1)
             SearchFields: =["ComplianceAssetId"]
@@ -224,7 +248,8 @@ Screens:
 
                     //If(Toggle1_1.Value = true,LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS_1.Selected.Value,countN),ThisItem.countN)
 
-                    LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted3)
+                    //LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted3)
+                    ThisItem.counted3
                   DisplayMode: =DisplayMode.Disabled
                   Fill: |+
                     =RGBA(255, 255, 255, 1)
@@ -261,7 +286,8 @@ Screens:
                     */
                     //If(Toggle1_1.Value = true,LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS_1.Selected.Value,countN),ThisItem.countN)
 
-                    LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted3)
+                    //LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted3)
+                    ThisItem.counted3
                   Width: =143
                   X: =470
                   Y: =7
@@ -379,31 +405,30 @@ Screens:
                   HoverBorderColor: =ColorFade(Self.BorderColor, 20%)
                   HoverColor: =RGBA(255, 255, 255, 1)
                   HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
-                  OnSelect: |+
-                    =If(ThisItem.field_6 = "MODULA",
+                  OnSelect: |-
+                    =If(!IsBlank(Counting_2.Text),
+                        With(
+                            {
+                                _qtyInput: Value(Counting_2.Text),
+                                _currentItem: LookUp(SonItemMaster, ID = ThisItem.ID) // หาตัวจริงใน DB
+                            },
+                            With(
+                                {
+                                    // ถ้าเป็น Modula ให้บวกเพิ่ม / ถ้าไม่ใช่ ให้แทนค่าเลย
+                                    _finalCount: If(ThisItem.field_6 = "MODULA", 
+                                                    _currentItem.counted3 + _qtyInput, 
+                                                    _qtyInput)
+                                },
 
-                    //Patch(
-                            //    Count2Final,
-                           //     LookUp(Count2Final, ID = ThisItem.ID),
-                           //     { counted3: Value(Counting_2.Text) + LookUp(SonItemMaster,productNumber = ThisItem.Title && Location = ThisItem.field_6,counted3) }
-                          //  );
+                                // 1. Update Database จริง (SharePoint)
+                                Patch(SonItemMaster, _currentItem, { counted3: _finalCount });
 
-                    Patch(
-                                SonItemMaster,
-                                LookUp(SonItemMaster, ID = ThisItem.ID),
-                                { counted3: Value(Counting_2.Text) + LookUp(SonItemMaster,productNumber = ThisItem.Title && Location = ThisItem.field_6,counted3) }
-                            );
-                    ,
-
-                    Patch(
-                                SonItemMaster,
-                                LookUp(SonItemMaster, ID = ThisItem.ID),
-                                { counted3: Value(Counting_2.Text) }
-                            );
-                    );
-
-
-                    Reset(Counting_2);
+                                // 2. Update Collection ที่แสดงผล (Count2Final)
+                                Patch(Count2Final, ThisItem, { counted3: _finalCount })
+                            )
+                        );
+                        Reset(Counting_2);
+                    )
                   PressedBorderColor: =Self.Fill
                   PressedColor: =Self.Fill
                   PressedFill: =Self.Color
@@ -471,14 +496,27 @@ Screens:
                   HoverColor: =RGBA(255, 255, 255, 1)
                   HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
                   OnSelect: |-
-                    =
-                    Patch(
-                                SonItemMaster,
-                                LookUp(SonItemMaster, ID = ThisItem.ID),
-                                { counted3: Value(Counting_2.Text)*-1 + LookUp(SonItemMaster,productNumber = ThisItem.Title && Location = ThisItem.field_6,counted3) }
-                            );
+                    =If(!IsBlank(Counting_2.Text),
+                        With(
+                            {
+                                _qtyToRemove: Value(Counting_2.Text),
+                                _currentItem: LookUp(SonItemMaster, ID = ThisItem.ID)
+                            },
+                            With(
+                                {
+                                    // เอาค่าเดิม ลบด้วย ค่าที่กรอก
+                                    _finalCount: _currentItem.counted3 - _qtyToRemove
+                                },
 
-                    Reset(Counting_2);
+                                // 1. Update Database จริง
+                                Patch(SonItemMaster, _currentItem, { counted3: _finalCount });
+
+                                // 2. Update Collection ที่แสดงผล
+                                Patch(Count2Final, ThisItem, { counted3: _finalCount })
+                            )
+                        );
+                        Reset(Counting_2);
+                    )
                   PaddingBottom: =3
                   PaddingLeft: =0
                   PaddingRight: =0
