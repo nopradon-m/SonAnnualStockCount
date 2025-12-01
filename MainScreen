@@ -2,7 +2,8 @@ Screens:
   MainScreen:
     Properties:
       LoadingSpinnerColor: =RGBA(56, 96, 178, 1)
-      OnVisible: =UpdateContext({varScannedItem:Blank()})
+      OnVisible: |+
+        =UpdateContext({varScannedItem:Blank()})
     Children:
       - ExportCsvBT:
           Control: Classic/Button@2.2.0
@@ -50,7 +51,7 @@ Screens:
           Properties:
             BorderColor: =RGBA(0, 18, 107, 1)
             Height: =750
-            Items: "= /* SortByColumns(If(Toggle1.Value = true,\r\n         Filter(AllItemMaster,MPN = If(IsBlank(mpnSelect.Selected.MPN),MPN,mpnSelect.Selected.MPN)),\r\n         Filter(AllItemMaster,\r\n                Location = LocationInputS.Selected.Value,\r\n                MPN = If(IsBlank(mpnSelect.Selected.MPN),MPN,mpnSelect.Selected.MPN) ))                            \r\n                                                \r\n                                                \r\n                                                ,\"Title\",SortOrder.Ascending)\r\n\r\n\r\n                                                If(Toggle1.Value = true,\r\nFirst(Filter(AllItemMaster,MPN = mpnSelect.Selected.MPN && !(Location = LocationInputS.Selected.Value))),\r\nSortByColumns(Filter(AllItemMaster,\r\n                Location = LocationInputS.Selected.Value,\r\n                MPN = If(IsBlank(mpnSelect.Selected.MPN),MPN,mpnSelect.Selected.MPN))\r\n                 ,\"Title\",SortOrder.Ascending)\r\n\r\n)\r\n\r\n*/\r\n\r\n\r\n SortByColumns(If(Toggle1.Value = true,\r\n         Filter(AllItemMaster,MPN = mpnSelect.Selected.MPN && !(Location = LocationInputS.Selected.Value)\r\n                )\r\n         \r\n         ,\r\n         \r\n         Filter(AllItemMaster,\r\n                Location = LocationInputS.Selected.Value,\r\n                MPN = If(IsBlank(mpnSelect.Selected.MPN),MPN,mpnSelect.Selected.MPN))\r\n\r\n                )                     \r\n                                                \r\n                                                \r\n                                                ,\"Title\",SortOrder.Ascending)\r\n\r\n\r\n\r\n\r\n\r\n"
+            Items: "=  SortByColumns(\r\n    Filter(\r\n        AllItemMaster,\r\n        // เงื่อนไข 1: กรองตาม Location (ถ้า Toggle เปิดอยู่ ไม่ต้องสนใจ Location)\r\n        (Toggle1.Value || Location = LocationInputS.Selected.Value),\r\n\r\n        // เงื่อนไข 2: กรองตาม MPN (ถ้ายังไม่เลือก ให้แสดงทั้งหมด)\r\n        (IsBlank(mpnSelect.Selected.MPN) || MPN = mpnSelect.Selected.MPN),\r\n\r\n        // เงื่อนไขเดิมของคุณ: ถ้า Toggle เปิด ต้องไม่เอา Location ที่เลือกอยู่\r\n        (!Toggle1.Value || !(Location = LocationInputS.Selected.Value))\r\n    ),\r\n    \"Title\", // หรือคอลัมน์ที่คุณต้องการเรียง (เช่น \"Title\" หรือ \"MPN\")\r\n    SortOrder.Ascending\r\n)\r\n \r\n \r\n \r\n /* SortByColumns(If(Toggle1.Value = true,\r\n         Filter(AllItemMaster,MPN = If(IsBlank(mpnSelect.Selected.MPN),MPN,mpnSelect.Selected.MPN)),\r\n         Filter(AllItemMaster,\r\n                Location = LocationInputS.Selected.Value,\r\n                MPN = If(IsBlank(mpnSelect.Selected.MPN),MPN,mpnSelect.Selected.MPN) ))                            \r\n                                                \r\n                                                \r\n                                                ,\"Title\",SortOrder.Ascending)\r\n\r\n\r\n                                                If(Toggle1.Value = true,\r\nFirst(Filter(AllItemMaster,MPN = mpnSelect.Selected.MPN && !(Location = LocationInputS.Selected.Value))),\r\nSortByColumns(Filter(AllItemMaster,\r\n                Location = LocationInputS.Selected.Value,\r\n                MPN = If(IsBlank(mpnSelect.Selected.MPN),MPN,mpnSelect.Selected.MPN))\r\n                 ,\"Title\",SortOrder.Ascending)\r\n\r\n)\r\n\r\n\r\n\r\n\r\n SortByColumns(If(Toggle1.Value = true,\r\n         Filter(AllItemMaster,MPN = mpnSelect.Selected.MPN && !(Location = LocationInputS.Selected.Value)\r\n                )\r\n         \r\n         ,\r\n         \r\n         Filter(AllItemMaster,\r\n                Location = LocationInputS.Selected.Value,\r\n                MPN = If(IsBlank(mpnSelect.Selected.MPN),MPN,mpnSelect.Selected.MPN))\r\n\r\n                )                     \r\n                                                \r\n                                                \r\n                                                ,\"Title\",SortOrder.Ascending)\r\n\r\n*/\r\n\r\n\r\n\r\n"
             TemplateSize: =162
             Y: =326
           Children:
@@ -92,92 +93,7 @@ Screens:
                   HoverBorderColor: =ColorFade(Self.BorderColor, 20%)
                   HoverColor: =RGBA(255, 255, 255, 1)
                   HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
-                  OnSelect: |+
-                    =If(IsBlank(Counting.Text),false,
-                    If(Toggle1.Value = true,
-
-                    If(IsBlank(LookUp(SonItemMaster,
-                        productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value)),
-                        Patch(SonItemMaster,Defaults(SonItemMaster),{
-                        productNumber:ThisItem.productNumber,
-                        productName:ThisItem.productName,
-                        MPN:ThisItem.MPN,
-                        brandId:ThisItem.brandId,
-                        brandName:ThisItem.brandName,
-                        Location:LocationInputS.Selected.Value,
-                        physicalInventory:0,
-                        countN:Value(Counting.Text),
-                        UPC:ThisItem.UPC,
-                        groupCh:ThisItem.groupCh,
-                        sourceID:52008002,
-                        newLine:1
-                    }    
-                    ),
-
-                    If(
-                        LocationInputS.Selected.Value = "MODULA",
-                        With(
-                            {
-                                incrementValue: Value(Counting.Text),
-                                currentRecord: LookUp(
-                                    SonItemMaster,
-                                    productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value
-                                )
-                            },
-                            Patch(
-                                SonItemMaster,
-                                currentRecord,
-                                {
-                                    countN: incrementValue + currentRecord.countN
-                                }
-                            )
-                        )
-                    ,
-                    Patch(SonItemMaster,LookUp(SonItemMaster,
-                        productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value),{
-                        countN:Value(Counting.Text)
-                        });
-                    )
-                    );
-
-                    ,
-
-                    If(LocationInputS.Selected.Value = "MODULA",
-
-                    Patch(SonItemMaster,LookUp(SonItemMaster,
-                        productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value),{
-                        countN:Value(Counting.Text) + LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value,countN)
-                        });
-                    ,
-                     Patch(SonItemMaster,LookUp(SonItemMaster,
-                        productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value),{
-                        countN:Value(Counting.Text)
-                        });
-                    )
-
-                    );
-                    );
-                    Reset(Counting);
-
-                    //Refresh(SonItemMaster);
-                    /*
-
-                        sumCount:Value(Counting.Text)+Sum(LookUp(SonItemMaster,productNumber = ThisItem.productNumber,countN))
-                    Concurrent(
-                              ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
-                              ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
-                              ClearCollect(itemMasterson3, Filter(SonItemMaster, sourceID >= 52004001 && sourceID <= 52006000)),
-                              ClearCollect(itemMasterson4, Filter(SonItemMaster, sourceID >= 52006001 && sourceID <= 52008000)),
-                              ClearCollect(itemMasterson5, Filter(SonItemMaster, sourceID >= 52008001 && sourceID <= 52010000))
-
-                    );
-                    ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
-                    );
-                    */
-                    //ClearCollect(AllItemMaster,Filter(SonItemMaster,Location = LocationInputS.Selected.Value));
-                    //Toggle1.Value = false;
-                    Reset(Toggle1);
-                    Reset(mpnSelect);
+                  OnSelect: "=If(IsBlank(Counting.Text), false,\r\n\r\n    // กรณีที่ 1: โหมด Search (Toggle1 = true)\r\n    If(Toggle1.Value = true,\r\n        With(\r\n            {\r\n                // ค้นหาว่าสินค้านี้ ใน Location ปลายทาง มีอยู่จริงไหม?\r\n                _targetRecordSP: LookUp(SonItemMaster, productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value),\r\n                _qtyInput: Value(Counting.Text)\r\n            },\r\n            \r\n            // ถ้าไม่มี (เป็น Blank) -> สร้างใหม่ (New Record)\r\n            If(IsBlank(_targetRecordSP),\r\n                Patch(SonItemMaster, Defaults(SonItemMaster), {\r\n                    productNumber: ThisItem.productNumber,\r\n                    productName: ThisItem.productName,\r\n                    MPN: ThisItem.MPN,\r\n                    brandId: ThisItem.brandId,\r\n                    brandName: ThisItem.brandName,\r\n                    Location: LocationInputS.Selected.Value, // ใช้ Location จาก Dropdown\r\n                    physicalInventory: 0,\r\n                    countN: _qtyInput, // ใช้ค่าที่เตรียมไว้\r\n                    UPC: ThisItem.UPC,\r\n                    groupCh: ThisItem.groupCh,\r\n                    sourceID: 52008002,\r\n                    newLine: 1\r\n                }),\r\n\r\n            // ถ้ามีอยู่แล้ว -> อัปเดตตัวนั้น (Existing Record Update)\r\n            // *สำคัญ* ต้องใช้ ID ของ _targetRecordSP ไม่ใช่ ThisItem.ID\r\n                With(\r\n                    {\r\n                        _finalCount: If(LocationInputS.Selected.Value = \"MODULA\", _targetRecordSP.countN + _qtyInput, _qtyInput)\r\n                    },\r\n                    // Update Database จริง\r\n                    Patch(SonItemMaster, _targetRecordSP, { countN: _finalCount });\r\n                    \r\n                    // หมายเหตุ: กรณี Toggle = true เราอาจไม่จำเป็นต้อง Patch Collection (AllItemMaster)\r\n                    // เพราะ Gallery อาจไม่ได้โชว์รายการของ Location ปลายทางอยู่\r\n                )\r\n            )\r\n        ),\r\n\r\n    // กรณีที่ 2: โหมดปกติ (Toggle1 = false) อัปเดตตัวมันเอง\r\n    // อันนี้คือโค้ดที่คุณควรใส่เพิ่มเพื่อให้ปุ่มทำงานครบสมบูรณ์\r\n        With(\r\n            {\r\n                _qtyInput: Value(Counting.Text),\r\n                _currentItem: LookUp(SonItemMaster, ID = ThisItem.ID) // หาตัวจริงใน DB\r\n            },\r\n            With(\r\n                {\r\n                    _finalCount: If(LocationInputS.Selected.Value = \"MODULA\", _currentItem.countN + _qtyInput, _qtyInput)\r\n                },\r\n                // Double Patch เพื่อความเร็ว\r\n                Patch(SonItemMaster, _currentItem, { countN: _finalCount });\r\n                Patch(AllItemMaster, LookUp(AllItemMaster, ID = ThisItem.ID), { countN: _finalCount })\r\n            )\r\n        )\r\n    );\r\n    \r\n    Reset(Counting);\r\n);\r\n\r\n//Refresh(SonItemMaster);\r\n/*\r\n\r\n    sumCount:Value(Counting.Text)+Sum(LookUp(SonItemMaster,productNumber = ThisItem.productNumber,countN))\r\nConcurrent(\r\n          ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),\r\n          ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),\r\n          ClearCollect(itemMasterson3, Filter(SonItemMaster, sourceID >= 52004001 && sourceID <= 52006000)),\r\n          ClearCollect(itemMasterson4, Filter(SonItemMaster, sourceID >= 52006001 && sourceID <= 52008000)),\r\n          ClearCollect(itemMasterson5, Filter(SonItemMaster, sourceID >= 52008001 && sourceID <= 52010000))\r\n\r\n);\r\nClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5\r\n);\r\n*/\r\n//ClearCollect(AllItemMaster,Filter(SonItemMaster,Location = LocationInputS.Selected.Value));\r\n//Toggle1.Value = false;\r\nReset(Toggle1);\r\nReset(mpnSelect);\r\n"
                   PressedBorderColor: =Self.Fill
                   PressedColor: =Self.Fill
                   PressedFill: =Self.Color
@@ -276,7 +192,8 @@ Screens:
 
                     //If(Toggle1.Value = true,LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value,countN),ThisItem.countN)
 
-                    LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value,countN)
+                    //LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value,countN)
+                    ThisItem.countN
                   DisplayMode: =DisplayMode.Disabled
                   Fill: |+
                     =RGBA(255, 255, 255, 1)
@@ -389,7 +306,9 @@ Screens:
                     */
                     //If(Toggle1.Value = true,LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value,countN),ThisItem.countN)
 
-                    LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value,countN)
+                    //LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value,countN)
+
+                    ThisItem.countN
                   Width: =143
                   X: =470
                   Y: =7
@@ -456,79 +375,7 @@ Screens:
                   HoverBorderColor: =ColorFade(Self.BorderColor, 20%)
                   HoverColor: =RGBA(255, 255, 255, 1)
                   HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
-                  OnSelect: |+
-                    =If(IsBlank(Counting.Text),false,
-                    If(Toggle1.Value = true,
-
-                    If(IsBlank(LookUp(SonItemMaster,
-                        productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value)),
-                        Patch(SonItemMaster,Defaults(SonItemMaster),{
-                        productNumber:ThisItem.productNumber,
-                        productName:ThisItem.productName,
-                        MPN:ThisItem.MPN,
-                        brandId:ThisItem.brandId,
-                        brandName:ThisItem.brandName,
-                        Location:LocationInputS.Selected.Value,
-                        physicalInventory:0,
-                        countN:Value(Counting.Text)*-1,
-                        UPC:ThisItem.UPC,
-                        groupCh:ThisItem.groupCh,
-                        sourceID:52008002,
-                        newLine:1
-                    }    
-                    ),
-
-                    If(LocationInputS.Selected.Value = "MODULA",
-                    Patch(SonItemMaster,LookUp(SonItemMaster,
-                        productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value),{
-                        countN:Value(Counting.Text)*-1 + LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value,countN)
-                        });
-                    ,
-                    Patch(SonItemMaster,LookUp(SonItemMaster,
-                        productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value),{
-                        countN:Value(Counting.Text)*-1
-                        });
-                    )
-                    );
-
-                    ,
-
-                    If(LocationInputS.Selected.Value = "MODULA",
-
-                    Patch(SonItemMaster,LookUp(SonItemMaster,
-                        productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value),{
-                        countN:Value(Counting.Text)*-1 + LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value,countN)
-                        });
-                    ,
-                     Patch(SonItemMaster,LookUp(SonItemMaster,
-                        productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value),{
-                        countN:Value(Counting.Text)*-1
-                        });
-                    )
-
-                    );
-                    );
-                    Reset(Counting);
-
-                    //Refresh(SonItemMaster);
-                    /*
-
-                        sumCount:Value(Counting.Text)+Sum(LookUp(SonItemMaster,productNumber = ThisItem.productNumber,countN))
-                    Concurrent(
-                              ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
-                              ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
-                              ClearCollect(itemMasterson3, Filter(SonItemMaster, sourceID >= 52004001 && sourceID <= 52006000)),
-                              ClearCollect(itemMasterson4, Filter(SonItemMaster, sourceID >= 52006001 && sourceID <= 52008000)),
-                              ClearCollect(itemMasterson5, Filter(SonItemMaster, sourceID >= 52008001 && sourceID <= 52010000))
-
-                    );
-                    ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
-                    );
-                    */
-                    ClearCollect(AllItemMaster,Filter(SonItemMaster,Location = LocationInputS.Selected.Value));
-                    //Toggle1.Value = false;
-                    Reset(Toggle1);
-                    Reset(mpnSelect);
+                  OnSelect: "=If(IsBlank(Counting.Text), false,\r\n\r\n    // กรณีที่ 1: โหมด Search (Toggle1 = true)\r\n    If(Toggle1.Value = true,\r\n        With(\r\n            {\r\n                // ค้นหาว่าสินค้านี้ ใน Location ปลายทาง มีอยู่จริงไหม?\r\n                _targetRecordSP: LookUp(SonItemMaster, productNumber = ThisItem.productNumber && Location = LocationInputS.Selected.Value),\r\n                _qtyInput: Value(Counting.Text)\r\n            },\r\n            \r\n            // ถ้าไม่มี (เป็น Blank) -> สร้างใหม่ (New Record) ด้วยค่าติดลบ\r\n            If(IsBlank(_targetRecordSP),\r\n                Patch(SonItemMaster, Defaults(SonItemMaster), {\r\n                    productNumber: ThisItem.productNumber,\r\n                    productName: ThisItem.productName,\r\n                    MPN: ThisItem.MPN,\r\n                    brandId: ThisItem.brandId,\r\n                    brandName: ThisItem.brandName,\r\n                    Location: LocationInputS.Selected.Value,\r\n                    physicalInventory: 0,\r\n                    countN: _qtyInput * -1, // *** จุดสำคัญ: ใส่ค่าติดลบ ***\r\n                    UPC: ThisItem.UPC,\r\n                    groupCh: ThisItem.groupCh,\r\n                    sourceID: 52008002,\r\n                    newLine: 1\r\n                }),\r\n\r\n            // ถ้ามีอยู่แล้ว -> อัปเดตตัวนั้น\r\n            // *** ต้องใช้ ID ของ _targetRecordSP ไม่ใช่ ThisItem.ID ***\r\n                With(\r\n                    {\r\n                        // ถ้าเป็น Modula ให้ลบออกจากค่าเดิม / ถ้าไม่ใช่ ให้แทนค่าด้วยค่าติดลบเลย\r\n                        _finalCount: If(LocationInputS.Selected.Value = \"MODULA\", _targetRecordSP.countN - _qtyInput, _qtyInput * -1)\r\n                    },\r\n                    // Update Database จริง\r\n                    Patch(SonItemMaster, _targetRecordSP, { countN: _finalCount })\r\n                )\r\n            )\r\n        ),\r\n\r\n    // กรณีที่ 2: โหมดปกติ (Toggle1 = false) อัปเดตตัวมันเอง\r\n        With(\r\n            {\r\n                _qtyInput: Value(Counting.Text),\r\n                _currentItem: LookUp(SonItemMaster, ID = ThisItem.ID) // หาตัวจริงใน DB\r\n            },\r\n            With(\r\n                {\r\n                    // ถ้าเป็น Modula ให้ลบออกจากค่าเดิม / ถ้าไม่ใช่ ให้แทนค่าด้วยค่าติดลบเลย\r\n                    _finalCount: If(LocationInputS.Selected.Value = \"MODULA\", _currentItem.countN - _qtyInput, _qtyInput * -1)\r\n                },\r\n                // Double Patch: อัปเดตทั้ง 2 ที่เพื่อความเร็ว\r\n                Patch(SonItemMaster, _currentItem, { countN: _finalCount });\r\n                Patch(AllItemMaster, LookUp(AllItemMaster, ID = ThisItem.ID), { countN: _finalCount })\r\n            )\r\n        )\r\n    );\r\n    \r\n    Reset(Counting);\r\n);\r\nReset(Toggle1);\r\nReset(mpnSelect);\r\n"
                   PaddingBottom: =3
                   PaddingLeft: =0
                   PaddingRight: =0
@@ -707,7 +554,8 @@ Screens:
             Font: =Font.'Open Sans'
             Height: =32
             OnSelect: |-
-              =Concurrent(
+              =/*
+              Concurrent(
                         ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
                         ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
                         ClearCollect(itemMasterson3, Filter(SonItemMaster, sourceID >= 52004001 && sourceID <= 52006000)),
@@ -717,6 +565,7 @@ Screens:
               );
               ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
               );
+              */
             OnUncheck: =Reset(mpnSelect)
             Size: =18
             TrueFill: =RGBA(56, 96, 178, 1)
@@ -785,6 +634,7 @@ Screens:
               =Reset(mpnSelect);
               Reset(Toggle1);
 
+              /*
               Concurrent(
                         ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
                         ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
@@ -795,6 +645,8 @@ Screens:
               );
               ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
               );
+
+              */
             PressedColor: =RGBA(255, 255, 255, 1)
             PressedFill: =RGBA(0, 18, 107, 1)
             SearchFields: =["Value"]
@@ -849,7 +701,7 @@ Screens:
                   Filter(AllItemMaster,Location = LocationInputS.Selected.Value))
             OnChange: |-
               =//Reset(Toggle1)
-
+              /*
               Concurrent(
                         ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
                         ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
@@ -860,6 +712,8 @@ Screens:
               );
               ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
               );
+
+              */
             PressedColor: =RGBA(255, 255, 255, 1)
             PressedFill: =RGBA(0, 18, 107, 1)
             SearchFields: =["field_3"]
