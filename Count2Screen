@@ -1,0 +1,607 @@
+Screens:
+  Count2Screen:
+    Properties:
+      LoadingSpinnerColor: =RGBA(56, 96, 178, 1)
+      OnVisible: |-
+        =ClearCollect(AllItemMaster,Blank());
+        Concurrent(
+                  ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
+                  ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
+                  ClearCollect(itemMasterson3, Filter(SonItemMaster, sourceID >= 52004001 && sourceID <= 52006000)),
+                  ClearCollect(itemMasterson4, Filter(SonItemMaster, sourceID >= 52006001 && sourceID <= 52008000)),
+                  ClearCollect(itemMasterson5, Filter(SonItemMaster, sourceID >= 52008001 && sourceID <= 52010000))
+
+        );
+        ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
+        );
+        ClearCollect(count2Pre,Blank());
+        ClearCollect(count2Pre,Filter(AllItemMaster,Value(Diff) <>0));
+        ClearCollect(count2Step1,GroupBy( count2Pre, productNumber, ValueStep1));
+        ClearCollect(count2SumCount,AddColumns(count2Step1,SumCount1,Sum(ValueStep1,countN),SumPhysicalInventory,Sum(ValueStep1,physicalInventory)));
+        ClearCollect(Count2Final, Ungroup( count2SumCount, ValueStep1));
+
+        Set(varHideBT,Blank());
+        Set(varHideBT,CountRows(Filter(Gallery1_1.AllItems,IsBlank(counted2))));
+    Children:
+      - Component1_3:
+          Control: CanvasComponent
+          ComponentName: Component1
+          Properties:
+            Height: =85
+      - Icon3_1:
+          Control: Classic/Icon@2.5.0
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Color: =RGBA(255, 255, 255, 1)
+            Height: =46
+            Icon: =Icon.Reload
+            OnSelect: |-
+              =Refresh(SonItemMaster);
+              Refresh(runningNumber);
+
+              Concurrent(
+                        ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
+                        ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
+                        ClearCollect(itemMasterson3, Filter(SonItemMaster, sourceID >= 52004001 && sourceID <= 52006000)),
+                        ClearCollect(itemMasterson4, Filter(SonItemMaster, sourceID >= 52006001 && sourceID <= 52008000)),
+                        ClearCollect(itemMasterson5, Filter(SonItemMaster, sourceID >= 52008001 && sourceID <= 52010000))
+
+              );
+              ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
+              );
+              ClearCollect(count2Pre,Blank());
+              ClearCollect(count2Pre,Filter(AllItemMaster,Value(Diff) <>0));
+              ClearCollect(count2Step1,GroupBy( count2Pre, productNumber, ValueStep1));
+              ClearCollect(count2SumCount,AddColumns(count2Step1,SumCount1,Sum(ValueStep1,countN),SumPhysicalInventory,Sum(ValueStep1,physicalInventory)));
+              ClearCollect(Count2Final, Ungroup( count2SumCount, ValueStep1));
+
+              ClearCollect(LocationSelect,Distinct(AllItemMaster,Location));
+
+              Set(varHideBT,Blank());
+              Set(varHideBT,CountRows(Filter(Gallery1_1.AllItems,IsBlank(counted2))));
+            Width: =38
+            X: =571
+            Y: =18
+      - requesterName_1:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            Align: =Align.Center
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Default: =User().FullName
+            Font: =Font.'Open Sans'
+            FontWeight: =FontWeight.Bold
+            Height: =47
+            HoverBorderColor: =RGBA(0, 18, 107, 1)
+            HoverFill: =RGBA(186, 202, 226, 1)
+            Size: =14
+            Width: =376
+            X: =20
+            Y: =94
+      - Time_1:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            Align: =Align.Center
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Default: ="Counting 2"
+            DisplayMode: =DisplayMode.Disabled
+            Font: =Font.'Open Sans'
+            FontWeight: =FontWeight.Bold
+            Height: =47
+            HoverBorderColor: =RGBA(0, 18, 107, 1)
+            HoverFill: =RGBA(186, 202, 226, 1)
+            Size: =14
+            Width: =214
+            X: =409
+            Y: =94
+      - Label6_1:
+          Control: Label@2.5.1
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Color: =RGBA(128, 128, 128, 1)
+            Font: =Font.'Open Sans'
+            Height: =46
+            PaddingLeft: =12
+            Size: =20
+            Text: =
+            Visible: |-
+              =false
+              //If(locationInput.DisplayMode = DisplayMode.Edit,false,true)
+            Width: =316
+            X: =20
+            Y: =200
+      - LocationError_1:
+          Control: Label@2.5.1
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Color: =RGBA(255, 0, 0, 1)
+            Font: =Font.'Open Sans'
+            Height: =37
+            Size: =18
+            Text: ="     Location not found"
+            Visible: |+
+              =//If(locationIP in AllItemMaster.Location || IsBlank(locationIP) || BarcodeLocation.Value in AllItemMaster.Location || locationInput.Text in AllItemMaster.Location ,false,true)
+            Width: =639
+            Y: =246
+      - LocationAvaliable_1:
+          Control: Label@2.5.1
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Color: =RGBA(54, 176, 75, 1)
+            Font: =Font.'Open Sans'
+            Height: =27
+            Size: =18
+            Text: ="     Avaliable"
+            Visible: =//If(locationIP in AllItemMaster.Location || BarcodeLocation.Value in AllItemMaster.Location || locationInput.Text in AllItemMaster.Location  ,true,false)
+            Width: =639
+            X: =1
+            Y: =250
+      - Label4_6:
+          Control: Label@2.5.1
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Color: =RGBA(255, 255, 255, 1)
+            Fill: =RGBA(179, 179, 179, 1)
+            Font: =Font.'Open Sans'
+            FontWeight: =FontWeight.Bold
+            Height: =60
+            Size: =18
+            Text: ="   Detail"
+            Width: =640
+            Y: =159
+      - mpnSelect_1:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            ChevronBackground: =RGBA(56, 96, 178, 1)
+            ChevronFill: =RGBA(255, 255, 255, 1)
+            ChevronHoverBackground: =ColorFade(RGBA(56, 96, 178, 1), -20%)
+            ChevronHoverFill: =RGBA(255, 255, 255, 1)
+            DisplayFields: =["field_3"]
+            Font: =Font.'Open Sans'
+            Height: =49
+            HoverFill: =RGBA(186, 202, 226, 1)
+            InputTextPlaceholder: ="Search MPN"
+            Items: |-
+              =        Filter(
+                          Count2Final,
+                          !IsBlank(countN),
+                          Value(Diff) <> 0,
+                          Value(SumCount1) <> Value(SumPhysicalInventory)
+                  )
+            OnChange: |-
+              =//Reset(Toggle1)
+
+              Concurrent(
+                        ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
+                        ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
+                        ClearCollect(itemMasterson3, Filter(SonItemMaster, sourceID >= 52004001 && sourceID <= 52006000)),
+                        ClearCollect(itemMasterson4, Filter(SonItemMaster, sourceID >= 52006001 && sourceID <= 52008000)),
+                        ClearCollect(itemMasterson5, Filter(SonItemMaster, sourceID >= 52008001 && sourceID <= 52010000))
+
+              );
+              ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
+              );
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(0, 18, 107, 1)
+            SearchFields: =["field_3"]
+            SelectMultiple: =false
+            SelectionColor: =RGBA(255, 255, 255, 1)
+            SelectionFill: =RGBA(56, 96, 178, 1)
+            Width: =386
+            X: =122
+            Y: =164
+      - Gallery1_1:
+          Control: Gallery@2.15.0
+          Variant: BrowseLayout_Vertical_OneTextVariant_ver4.0
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =857
+            Items: "=SortByColumns(        \r\n      \r\n        Filter(\r\n            Count2Final,\r\n            field_3 = If(IsBlank(mpnSelect_1.Selected.field_3), field_3, mpnSelect_1.Selected.field_3),\r\n            !IsBlank(countN),\r\n            Value(Diff) <> 0,\r\n            Value(SumCount1) <> Value(SumPhysicalInventory)\r\n    )\r\n    \r\n    , \r\n    \"field_6\", SortOrder.Ascending\r\n)\r\n\r\n\r\n\r\n\r\n"
+            TemplateSize: =162
+            Y: =219
+          Children:
+            - Title2_6:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Right
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Font: =Font.'Open Sans'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =31
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Text: |-
+                    =" MPN : "
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =105
+                  Y: =7
+            - mpnDetail_2:
+                Control: Label@2.5.1
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Font: =Font.'Open Sans'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =31
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Text: =ThisItem.field_3
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =365
+                  X: =105
+                  Y: =7
+            - Counted_1:
+                Control: Classic/TextInput@2.3.2
+                Properties:
+                  BorderColor: |+
+                    =RGBA(0, 18, 107, 1)
+                  Default: |-
+                    =/*If(Toggle1.Value = true,Text(LookUp(SCP_SON_Item_Transection,
+                      Title = ThisItem.productNumber && Location = LocationInputS.Selected.Value,physicalCount),"#,#"),
+
+                    Text(LookUp(SCP_SON_Item_Transection,
+                      Title = ThisItem.productNumber && Location = ThisItem.Location,physicalCount),"#,#")
+                    )
+                    */
+
+                    //If(Toggle1_1.Value = true,LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS_1.Selected.Value,countN),ThisItem.countN)
+
+                    LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2)
+                  DisplayMode: =DisplayMode.Disabled
+                  Fill: |+
+                    =RGBA(255, 255, 255, 1)
+                  Font: =Font.'Open Sans'
+                  Height: =38
+                  HoverBorderColor: =RGBA(0, 18, 107, 1)
+                  HoverFill: =RGBA(186, 202, 226, 1)
+                  OnSelect: =Select(Parent)
+                  Size: =20
+                  Width: =143
+                  X: =470
+                  Y: =7
+            - Label3_1:
+                Control: Label@2.5.1
+                Properties:
+                  BorderColor: =RGBA(0, 18, 107, 1)
+                  Color: =RGBA(149, 149, 149, 1)
+                  Fill: |+
+                    =RGBA(0, 0, 0, 0)
+                  Font: =Font.'Open Sans'
+                  Height: =38
+                  OnSelect: =Select(Parent)
+                  PaddingLeft: =12
+                  Size: =20
+                  Text: |-
+                    =/*
+                    If(Toggle1.Value = true,Text(LookUp(SCP_SON_Item_Transection,
+                      Title = ThisItem.productNumber && Location = LocationInputS.Selected.Value,physicalCount),"#,#"),
+
+                    Text(LookUp(SCP_SON_Item_Transection,
+                      Title = ThisItem.productNumber && Location = ThisItem.Location,physicalCount),"#,#")
+                    )
+
+                    */
+                    //If(Toggle1_1.Value = true,LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS_1.Selected.Value,countN),ThisItem.countN)
+
+                    LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2)
+                  Width: =143
+                  X: =470
+                  Y: =7
+            - Rectangle1_1:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderColor: =RGBA(0, 18, 107, 1)
+                  Fill: =If(Value(Counted_1.Text) = ThisItem.field_7,Color.DarkGreen,Color.Red)
+                  Height: =38
+                  OnSelect: =Select(Parent)
+                  Visible: =false
+                  Width: =30
+                  X: =583
+                  Y: =7
+            - upcLabel_1:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Right
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Font: =Font.'Open Sans'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =28
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =16
+                  Text: |-
+                    =" UPC : "
+                  VerticalAlign: =VerticalAlign.Top
+                  Visible: =false
+                  Width: =77
+                  X: =13
+                  Y: =38
+            - mpnDetail_3:
+                Control: Label@2.5.1
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Font: =Font.'Open Sans'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =28
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =16
+                  Text: =ThisItem.field_1
+                  VerticalAlign: =VerticalAlign.Top
+                  Visible: =false
+                  Width: =257
+                  X: =90
+                  Y: =38
+            - Title2_7:
+                Control: Label@2.5.1
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Font: =Font.'Open Sans'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =28
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =20
+                  Text: |-
+                    ="Name : "
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =95
+                  X: =6
+                  Y: =45
+            - Title2_8:
+                Control: Label@2.5.1
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Font: =Font.'Open Sans'
+                  Height: =88
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =16
+                  Text: =ThisItem.field_2
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =318
+                  X: =105
+                  Y: =45
+            - Counting_1:
+                Control: Classic/TextInput@2.3.2
+                Properties:
+                  BorderColor: =RGBA(0, 18, 107, 1)
+                  Default: =""
+                  Font: =Font.'Open Sans'
+                  Format: =TextFormat.Number
+                  Height: =38
+                  HoverBorderColor: =RGBA(0, 18, 107, 1)
+                  HoverFill: =RGBA(186, 202, 226, 1)
+                  OnSelect: =Select(Parent)
+                  Size: =20
+                  Width: =143
+                  X: =470
+                  Y: =59
+            - updateBT_1:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =ColorFade(Self.Fill, -15%)
+                  Color: =RGBA(255, 255, 255, 1)
+                  DisabledBorderColor: =RGBA(166, 166, 166, 1)
+                  Fill: =RGBA(56, 96, 178, 1)
+                  Font: =Font.'Open Sans'
+                  Height: =44
+                  HoverBorderColor: =ColorFade(Self.BorderColor, 20%)
+                  HoverColor: =RGBA(255, 255, 255, 1)
+                  HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
+                  OnSelect: "=If(ThisItem.field_6 = \"MODULA\",\r\n    \r\nPatch(\r\n            SonItemMaster,\r\n            LookUp(SonItemMaster, ID = ThisItem.ID),\r\n            { counted2: Value(Counting_1.Text) + LookUp(SonItemMaster,productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2) }\r\n        );\r\n,\r\n\r\nPatch(\r\n            SonItemMaster,\r\n            LookUp(SonItemMaster, ID = ThisItem.ID),\r\n            { counted2: Value(Counting_1.Text) }\r\n        );\r\n\r\n);\r\nReset(Counting_1);\r\n"
+                  PressedBorderColor: =Self.Fill
+                  PressedColor: =Self.Fill
+                  PressedFill: =Self.Color
+                  Size: =16
+                  Text: ="Update"
+                  Visible: |+
+                    =If(varHideBT = 0,false,true)
+
+
+                  Width: =143
+                  X: =470
+                  Y: =106
+            - Title2_10:
+                Control: Label@2.5.1
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Font: =Font.'Open Sans'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =28
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =16
+                  Text: |-
+                    ="Location : "
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =101
+                  X: =7
+                  Y: =134
+            - ThisLocation_1:
+                Control: Label@2.5.1
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 1)
+                  Font: =Font.'Open Sans'
+                  FontWeight: =FontWeight.Semibold
+                  Height: =28
+                  OnSelect: =Select(Parent)
+                  PaddingBottom: =0
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  Size: =16
+                  Text: =ThisItem.field_6
+                  VerticalAlign: =VerticalAlign.Top
+                  Width: =107
+                  X: =108
+                  Y: =134
+            - Separator2_1:
+                Control: Rectangle@2.3.0
+                Properties:
+                  BorderColor: =RGBA(0, 18, 107, 1)
+                  Fill: =RGBA(0, 18, 107, 1)
+                  Height: =1
+                  OnSelect: =Select(Parent)
+                  Width: =Parent.TemplateWidth
+                  Y: =Parent.TemplateHeight - 1
+            - Button3_1:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =ColorFade(Self.Fill, -15%)
+                  Color: =RGBA(255, 255, 255, 1)
+                  DisabledBorderColor: =RGBA(166, 166, 166, 1)
+                  Fill: =RGBA(56, 96, 178, 1)
+                  Font: =Font.'Open Sans'
+                  Height: =24
+                  HoverBorderColor: =ColorFade(Self.BorderColor, 20%)
+                  HoverColor: =RGBA(255, 255, 255, 1)
+                  HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
+                  OnSelect: |+
+                    =Patch(
+                                SonItemMaster,
+                                LookUp(SonItemMaster, ID = ThisItem.ID),
+                                { counted2: Value(Counting_1.Text)*-1 + LookUp(SonItemMaster,productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2) }
+                            );
+
+                    Reset(Counting_1);
+
+
+                  PaddingBottom: =3
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  PaddingTop: =0
+                  PressedBorderColor: =Self.Fill
+                  PressedColor: =Self.Fill
+                  PressedFill: =Self.Color
+                  Size: =15
+                  Text: ="-"
+                  Visible: |+
+                    =If(ThisItem.field_6 = "MODULA" && varHideBT <> 0 ,true,false)
+                  Width: =42
+                  X: =423
+                  Y: =66
+      - upcOutLB_1:
+          Control: Label@2.5.1
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 1)
+            Font: =Font.'Open Sans'
+            FontWeight: =FontWeight.Semibold
+            Height: =36
+            OnSelect: =
+            PaddingBottom: =0
+            PaddingLeft: =0
+            PaddingRight: =0
+            PaddingTop: =0
+            Size: =20
+            Text: |-
+              ="UPC  : "
+            VerticalAlign: =VerticalAlign.Top
+            Visible: =false
+            Width: =77
+            X: =32
+            Y: =568
+      - mpnOutLB_1:
+          Control: Label@2.5.1
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 1)
+            Font: =Font.'Open Sans'
+            FontWeight: =FontWeight.Semibold
+            Height: =28
+            OnSelect: =
+            PaddingBottom: =0
+            PaddingLeft: =0
+            PaddingRight: =0
+            PaddingTop: =0
+            Size: =20
+            Text: |-
+              ="MPN : "
+            VerticalAlign: =VerticalAlign.Top
+            Visible: =false
+            Width: =77
+            X: =32
+            Y: =604
+      - Label4_8:
+          Control: Label@2.5.1
+          Properties:
+            Align: =Align.Center
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Color: =RGBA(255, 255, 255, 1)
+            Fill: =RGBA(202, 202, 202, 1)
+            Font: =Font.'Open Sans'
+            FontWeight: =FontWeight.Bold
+            Height: =60
+            Size: =18
+            Text: |-
+              ="Rows : " & CountRows(Gallery1_1.AllItems)
+            Width: =640
+            Y: =1076
+      - Button1_1:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderColor: =ColorFade(Self.Fill, -15%)
+            Color: =RGBA(255, 255, 255, 1)
+            DisabledBorderColor: =RGBA(166, 166, 166, 1)
+            Fill: =RGBA(56, 96, 178, 1)
+            Font: =Font.'Open Sans'
+            Height: =41
+            HoverBorderColor: =ColorFade(Self.BorderColor, 20%)
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
+            OnSelect: =Navigate(Count3Screen)
+            PressedBorderColor: =Self.Fill
+            PressedColor: =Self.Fill
+            PressedFill: =Self.Color
+            Size: =20
+            Text: ="Count 3"
+            Visible: |+
+              =If(CountRows(Filter(Gallery1_1.AllItems,IsBlank(counted2)))=0,true,false)
+
+            Width: =168
+            X: =20
+            Y: =1085
+      - Icon6_1:
+          Control: Classic/Icon@2.5.0
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Color: =RGBA(255, 255, 255, 1)
+            Icon: =Icon.ChevronLeft
+            OnSelect: =Navigate(MainScreen)
+            X: =20
+            Y: =10
+      - Time_4:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            Align: =Align.Center
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Default: ="Counting 2"
+            DisplayMode: =DisplayMode.View
+            Font: =Font.'Open Sans'
+            FontWeight: =FontWeight.Bold
+            Height: =47
+            HoverBorderColor: =RGBA(0, 18, 107, 1)
+            HoverFill: =RGBA(186, 202, 226, 1)
+            Size: =14
+            Width: =214
+            X: =409
+            Y: =94
