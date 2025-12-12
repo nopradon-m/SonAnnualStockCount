@@ -144,6 +144,22 @@ Screens:
               =//If(locationIP in AllItemMaster.Location || IsBlank(locationIP) || BarcodeLocation.Value in AllItemMaster.Location || locationInput.Text in AllItemMaster.Location ,false,true)
             Width: =639
             Y: =246
+      - Label4_6:
+          Control: Label@2.5.1
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Color: =RGBA(255, 255, 255, 1)
+            Fill: =RGBA(179, 179, 179, 1)
+            Font: =Font.'Open Sans'
+            FontWeight: =FontWeight.Bold
+            Height: =124
+            Size: =18
+            Text: |-
+              ="  Detail
+
+                Location"
+            Width: =640
+            Y: =159
       - LocationAvaliable_1:
           Control: Label@2.5.1
           Properties:
@@ -157,19 +173,6 @@ Screens:
             Width: =639
             X: =1
             Y: =250
-      - Label4_6:
-          Control: Label@2.5.1
-          Properties:
-            BorderColor: =RGBA(0, 18, 107, 1)
-            Color: =RGBA(255, 255, 255, 1)
-            Fill: =RGBA(179, 179, 179, 1)
-            Font: =Font.'Open Sans'
-            FontWeight: =FontWeight.Bold
-            Height: =60
-            Size: =18
-            Text: ="   Detail"
-            Width: =640
-            Y: =159
       - mpnSelect_1:
           Control: Classic/ComboBox@2.4.0
           Properties:
@@ -191,7 +194,8 @@ Screens:
                           Value(SumCount1) <> Value(SumPhysicalInventory)
                   )
             OnChange: |-
-              =//Reset(Toggle1)
+              =Reset(LocationFilter_C2);
+              //Reset(Toggle1)
 
               /*
               Concurrent(
@@ -212,18 +216,18 @@ Screens:
             SelectMultiple: =false
             SelectionColor: =RGBA(255, 255, 255, 1)
             SelectionFill: =RGBA(56, 96, 178, 1)
-            Width: =386
-            X: =122
-            Y: =164
+            Width: =351
+            X: =127
+            Y: =168
       - Gallery1_1:
           Control: Gallery@2.15.0
           Variant: BrowseLayout_Vertical_OneTextVariant_ver4.0
           Properties:
             BorderColor: =RGBA(0, 18, 107, 1)
-            Height: =857
-            Items: "=SortByColumns(        \r\n      \r\n        Filter(\r\n            Count2Final,\r\n            field_3 = If(IsBlank(mpnSelect_1.Selected.field_3), field_3, mpnSelect_1.Selected.field_3),\r\n            !IsBlank(countN),\r\n            Value(Diff) <> 0,\r\n            Value(SumCount1) <> Value(SumPhysicalInventory)\r\n    )\r\n    \r\n    , \r\n    \"field_6\", SortOrder.Ascending\r\n)\r\n\r\n\r\n\r\n\r\n"
+            Height: =812
+            Items: "=SortByColumns(\r\n    Filter(\r\n        Count2Final,\r\n        \r\n        // 1. กรอง MPN (ของเดิม)\r\n        (IsBlank(mpnSelect_1.Selected.field_3) || field_3 = mpnSelect_1.Selected.field_3),\r\n\r\n        // 2. เงื่อนไขพื้นฐาน (ของเดิม)\r\n        !IsBlank(countN),\r\n        Value(Diff) <> 0,\r\n        Value(SumCount1) <> Value(SumPhysicalInventory),\r\n\r\n        // 3. [เพิ่มใหม่] กรอง Location (field_6 คือ Location ในหน้านี้)\r\n        (IsBlank(LocationFilter_C2.Selected.Value) || field_6 = LocationFilter_C2.Selected.Value),\r\n\r\n        // 4. [เพิ่มใหม่] กรองเฉพาะตัวที่ยังไม่นับ (ถ้า Toggle เปิด -> counted2 ต้องว่าง)\r\n        (!ToggleUncounted.Value || IsBlank(counted2))\r\n    ),\r\n    \"field_6\", \r\n    SortOrder.Ascending\r\n)\r\n\r\n\r\n/*\r\nSortByColumns(        \r\n      \r\n        Filter(\r\n            Count2Final,\r\n            field_3 = If(IsBlank(mpnSelect_1.Selected.field_3), field_3, mpnSelect_1.Selected.field_3),\r\n            !IsBlank(countN),\r\n            Value(Diff) <> 0,\r\n            Value(SumCount1) <> Value(SumPhysicalInventory)\r\n    )\r\n    \r\n    , \r\n    \"field_6\", SortOrder.Ascending\r\n)\r\n*/\r\n\r\n\r\n\r\n\r\n\r\n\r\n"
             TemplateSize: =162
-            Y: =219
+            Y: =283
           Children:
             - Title2_6:
                 Control: Label@2.5.1
@@ -302,7 +306,7 @@ Screens:
                   OnSelect: =Select(Parent)
                   PaddingLeft: =12
                   Size: =20
-                  Text: |-
+                  Text: |+
                     =/*
                     If(Toggle1.Value = true,Text(LookUp(SCP_SON_Item_Transection,
                       Title = ThisItem.productNumber && Location = LocationInputS.Selected.Value,physicalCount),"#,#"),
@@ -314,8 +318,7 @@ Screens:
                     */
                     //If(Toggle1_1.Value = true,LookUp(SonItemMaster,productNumber = ThisItem.productNumber && Location = LocationInputS_1.Selected.Value,countN),ThisItem.countN)
 
-                    //LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2)
-                    ThisItem.counted2
+                    LookUp(SonItemMaster, productNumber = ThisItem.Title && Location = ThisItem.field_6,counted2)
                   Width: =143
                   X: =470
                   Y: =7
@@ -617,12 +620,12 @@ Screens:
             Fill: =RGBA(202, 202, 202, 1)
             Font: =Font.'Open Sans'
             FontWeight: =FontWeight.Bold
-            Height: =60
+            Height: =40
             Size: =18
             Text: |-
               ="Rows : " & CountRows(Gallery1_1.AllItems)
             Width: =640
-            Y: =1076
+            Y: =1096
       - Button1_1:
           Control: Classic/Button@2.2.0
           Properties:
@@ -631,7 +634,7 @@ Screens:
             DisabledBorderColor: =RGBA(166, 166, 166, 1)
             Fill: =RGBA(56, 96, 178, 1)
             Font: =Font.'Open Sans'
-            Height: =41
+            Height: =30
             HoverBorderColor: =ColorFade(Self.BorderColor, 20%)
             HoverColor: =RGBA(255, 255, 255, 1)
             HoverFill: =ColorFade(RGBA(56, 96, 178, 1), -20%)
@@ -643,10 +646,9 @@ Screens:
             Text: ="Count 3"
             Visible: |+
               =If(CountRows(Filter(Gallery1_1.AllItems,IsBlank(counted2)))=0,true,false)
-
-            Width: =168
+            Width: =148
             X: =20
-            Y: =1085
+            Y: =1101
       - Icon6_1:
           Control: Classic/Icon@2.5.0
           Properties:
@@ -672,3 +674,72 @@ Screens:
             Width: =214
             X: =409
             Y: =94
+      - LocationFilter_C2:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            ChevronBackground: =RGBA(56, 96, 178, 1)
+            ChevronFill: =RGBA(255, 255, 255, 1)
+            ChevronHoverBackground: =ColorFade(RGBA(56, 96, 178, 1), -20%)
+            ChevronHoverFill: =RGBA(255, 255, 255, 1)
+            DisplayFields: =["Value"]
+            Font: =Font.'Open Sans'
+            Height: =49
+            HoverFill: =RGBA(186, 202, 226, 1)
+            InputTextPlaceholder: ="Select Location"
+            Items: |-
+              =Sort(
+                  Distinct(
+                      Filter(
+                          Count2Final,
+                          // 1. กรองตาม MPN (ถ้ามีการเลือก MPN ให้โชว์แค่ Location ของ MPN นั้น)
+                          (IsBlank(mpnSelect_1.Selected.field_3) || field_3 = mpnSelect_1.Selected.field_3),
+
+                          // 2. กรองตาม Toggle (ถ้าเลือก Pending Only ให้โชว์แค่ Location ที่ยังไม่นับ)
+                          (!ToggleUncounted.Value || IsBlank(counted2)),
+
+                          // 3. เงื่อนไขพื้นฐาน (เฉพาะที่มีรายการต้องนับ)
+                          !IsBlank(countN),
+                          Value(Diff) <> 0,
+                          Value(SumCount1) <> Value(SumPhysicalInventory)
+                      ),
+                      field_6 // ดึงเฉพาะชื่อ Location (field_6) ออกมา
+                  ),
+                  Value,
+                  SortOrder.Ascending
+              )
+            OnChange: |-
+              =//Reset(Toggle1)
+
+              /*
+              Concurrent(
+                        ClearCollect(itemMasterson1, Filter(SonItemMaster, sourceID >= 52000001 && sourceID <= 52002000)),
+                        ClearCollect(itemMasterson2, Filter(SonItemMaster, sourceID >= 52002001 && sourceID <= 52004000)),
+                        ClearCollect(itemMasterson3, Filter(SonItemMaster, sourceID >= 52004001 && sourceID <= 52006000)),
+                        ClearCollect(itemMasterson4, Filter(SonItemMaster, sourceID >= 52006001 && sourceID <= 52008000)),
+                        ClearCollect(itemMasterson5, Filter(SonItemMaster, sourceID >= 52008001 && sourceID <= 52010000))
+
+              );
+              ClearCollect(AllItemMaster,itemMasterson1,itemMasterson2,itemMasterson3,itemMasterson4,itemMasterson5
+              );
+
+              */
+            PressedColor: =RGBA(255, 255, 255, 1)
+            PressedFill: =RGBA(0, 18, 107, 1)
+            SearchFields: =["Value"]
+            SelectMultiple: =false
+            SelectionColor: =RGBA(255, 255, 255, 1)
+            SelectionFill: =RGBA(56, 96, 178, 1)
+            Width: =351
+            X: =127
+            Y: =228
+      - ToggleUncounted:
+          Control: Classic/Toggle@2.1.0
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Font: =Font.'Open Sans'
+            Height: =45
+            TrueFill: =RGBA(56, 96, 178, 1)
+            Width: =127
+            X: =496
+            Y: =200
